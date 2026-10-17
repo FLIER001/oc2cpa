@@ -124,11 +124,11 @@ Authorization: Bearer <api-key>
 ## 开发
 
 ```bash
-npm test              # 离线测试，不访问上游
-npm run test:live     # 真实联调，需要网络
+npm test              # 离线测试，不访问上游；CI 只跑这个
+npm run test:live     # 真实联调，需要网络，不进 CI
 npm run lint          # ESLint 静态检查
 npm run format:check  # 检查格式
 npm run format        # Prettier 自动格式化
 ```
 
-联调用例覆盖非流式、流式多轮、禁用工具、实际工具调用、工具结果回填和并行工具调用，会真实请求上游，受上游限流影响；离线运行时自动跳过。
+联调用例会对 `big-pickle`、`mimo-v2.6-flash-free`、`deepseek-v4.1-flash-free`、`glm-5.3-flash-free` 各跑一次多轮连续工具调用（含与内置同名的客户端 `read`），真实请求上游，受免费层限流影响；未设置 `OC2API_LIVE_TEST=1` 时自动跳过。因为依赖真实模型和上游配额，它不纳入 CI 门禁，需要时本地执行。
