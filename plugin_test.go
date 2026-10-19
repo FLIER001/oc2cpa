@@ -113,14 +113,14 @@ func TestWithGateToolsAliasCollision(t *testing.T) {
 	aliases := []string{}
 	for _, raw := range phase.tools {
 		name := functionName(asObject(raw))
-		if strings.HasPrefix(name, "oc2api_a_b") {
+		if strings.HasPrefix(name, "oc2cap_a_b") {
 			aliases = append(aliases, name)
 		}
 	}
 	if len(aliases) != 2 || aliases[0] == aliases[1] {
 		t.Fatalf("colliding names need distinct aliases: %v", aliases)
 	}
-	if aliases[0] != "oc2api_a_b" {
+	if aliases[0] != "oc2cap_a_b" {
 		t.Fatalf("first alias must be the plain base: %v", aliases)
 	}
 	if !strings.HasSuffix(aliases[1], "_1") {
@@ -140,7 +140,7 @@ func TestWithGateToolsSkipsMalformed(t *testing.T) {
 	if functionName(asObject(phase.tools[0])) != "" {
 		t.Fatalf("name-less tool must keep its shape: %v", phase.tools[0])
 	}
-	if functionName(asObject(phase.tools[1])) != "oc2api_read" {
+	if functionName(asObject(phase.tools[1])) != "oc2cap_read" {
 		t.Fatalf("named tool must be renamed: %v", phase.tools[1])
 	}
 	if functionName(asObject(phase.tools[2])) != gateToolName {
@@ -233,11 +233,11 @@ func TestRenameMessageToolsRenamesToolCallNames(t *testing.T) {
 			},
 		},
 	}
-	renamed := renameMessageTools(message, map[string]string{"read": "oc2api_read"})
+	renamed := renameMessageTools(message, map[string]string{"read": "oc2cap_read"})
 	object := asObject(renamed)
 	calls := fromAnySlice(object["tool_calls"])
 	fn := asObject(asObject(calls[0])["function"])
-	if fn["name"] != "oc2api_read" {
+	if fn["name"] != "oc2cap_read" {
 		t.Fatalf("tool_call name must be renamed: %v", fn)
 	}
 }
@@ -245,14 +245,14 @@ func TestRenameMessageToolsRenamesToolCallNames(t *testing.T) {
 func TestRenameToolChoice(t *testing.T) {
 	// JS parity: a legacy string tool_choice is NOT renamed (renameToolCall
 	// reads call?.function?.name, undefined on strings).
-	renamed := renameToolChoice("read", map[string]string{"read": "oc2api_read"})
+	renamed := renameToolChoice("read", map[string]string{"read": "oc2cap_read"})
 	if renamed != "read" {
 		t.Fatalf("legacy string tool_choice must stay unchanged: %v", renamed)
 	}
 	object := map[string]any{"type": "function", "function": map[string]any{"name": "read"}}
-	out := renameToolChoice(object, map[string]string{"read": "oc2api_read"})
+	out := renameToolChoice(object, map[string]string{"read": "oc2cap_read"})
 	converted := asObject(out)
-	if asObject(converted["function"])["name"] != "oc2api_read" {
+	if asObject(converted["function"])["name"] != "oc2cap_read" {
 		t.Fatalf("tool_choice object rename: %v", converted)
 	}
 }
@@ -342,19 +342,19 @@ func TestAggregateSimpleText(t *testing.T) {
 }
 
 func TestAggregateToolCallsByIndex(t *testing.T) {
-	// The client's read tool travels upstream as the oc2api_read alias and is
+	// The client's read tool travels upstream as the oc2cap_read alias and is
 	// restored on the response side.
 	ctx := streamCtxFrom(&upstreamRequest{
 		Model:             "big-pickle",
 		RequestID:         "req_alias",
 		ThinkingEnabled:   true,
 		ChoiceCount:       1,
-		Aliases:           map[string]string{"oc2api_read": "read"},
+		Aliases:           map[string]string{"oc2cap_read": "read"},
 		ReservedToolNames: []string{"read"},
-		ClientToolNames:   []string{"oc2api_read"},
+		ClientToolNames:   []string{"oc2cap_read"},
 	})
 	result, err := aggregateWith(t, ctx,
-		[]byte(sse(`{"choices":[{"index":0,"delta":{"role":"assistant","tool_calls":[{"index":0,"id":"call_a","function":{"name":"oc2api_read","arguments":""}}]}}]}`)),
+		[]byte(sse(`{"choices":[{"index":0,"delta":{"role":"assistant","tool_calls":[{"index":0,"id":"call_a","function":{"name":"oc2cap_read","arguments":""}}]}}]}`)),
 		[]byte(sse(`{"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":"{\"p\":1}"}}]}}]}`)),
 		[]byte(sse(`{"choices":[{"index":0,"delta":{},"finish_reason":"stop"}]}`)),
 		[]byte("data: [DONE]\n\n"),
@@ -688,14 +688,14 @@ func TestRestoreFunctionNameDeferredWhilePrefix(t *testing.T) {
 	ctx := streamCtxFrom(&upstreamRequest{
 		Model:             "big-pickle",
 		RequestID:         "r",
-		Aliases:           map[string]string{"oc2api_read": "read", "oc2api_read_1": "readdoc"},
+		Aliases:           map[string]string{"oc2cap_read": "read", "oc2cap_read_1": "readdoc"},
 		ReservedToolNames: []string{"read"},
-		ClientToolNames:   []string{"oc2api_read", "oc2api_read_1"},
+		ClientToolNames:   []string{"oc2cap_read", "oc2cap_read_1"},
 	})
 	parser := newEventParser(&fakeBody{}, ctx)
 	book := newToolCallBook()
 	target := toolCallTarget(book, map[string]any{})
-	frame, err := parser.restoreFunctionName(map[string]any{"name": "oc2api_read"}, target)
+	frame, err := parser.restoreFunctionName(map[string]any{"name": "oc2cap_read"}, target)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -718,14 +718,14 @@ func TestRestoreFunctionNameAliasRestored(t *testing.T) {
 	ctx := streamCtxFrom(&upstreamRequest{
 		Model:             "big-pickle",
 		RequestID:         "r",
-		Aliases:           map[string]string{"oc2api_lookup": "lookup"},
+		Aliases:           map[string]string{"oc2cap_lookup": "lookup"},
 		ReservedToolNames: []string{"read"},
-		ClientToolNames:   []string{"oc2api_lookup"},
+		ClientToolNames:   []string{"oc2cap_lookup"},
 	})
 	parser := newEventParser(&fakeBody{}, ctx)
 	book := newToolCallBook()
 	target := toolCallTarget(book, map[string]any{})
-	frame, err := parser.restoreFunctionName(map[string]any{"name": "oc2api_lookup"}, target)
+	frame, err := parser.restoreFunctionName(map[string]any{"name": "oc2cap_lookup"}, target)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -755,9 +755,9 @@ func TestReservedToolNameInStreamFrames(t *testing.T) {
 	ctx := streamCtxFrom(&upstreamRequest{
 		Model:             "big-pickle",
 		RequestID:         "r",
-		Aliases:           map[string]string{"oc2api_write": "write"},
+		Aliases:           map[string]string{"oc2cap_write": "write"},
 		ReservedToolNames: []string{"read"},
-		ClientToolNames:   []string{"oc2api_write"},
+		ClientToolNames:   []string{"oc2cap_write"},
 	})
 	body := &fakeBody{chunks: [][]byte{
 		[]byte(`data: {"choices":[{"index":0,"delta":{"role":"assistant","tool_calls":[{"index":0,"id":"a","function":{"name":"read","arguments":"{}"}}]}}]}` + "\n\n"),
@@ -925,7 +925,7 @@ func TestMarshalErrorEnvelopeFrom(t *testing.T) {
 func TestFilterExcluded(t *testing.T) {
 	request := pluginapi.StaticModelRequest{
 		Host: pluginapi.HostConfigSummary{
-			ExcludedModels: map[string][]string{"oc2api": {"big-pickle"}},
+			ExcludedModels: map[string][]string{"oc2cap": {"big-pickle"}},
 		},
 	}
 	models := filterExcluded(staticCatalog(), request.Host)

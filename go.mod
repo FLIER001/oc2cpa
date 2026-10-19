@@ -1,4 +1,4 @@
-module github.com/zhuweiyou/oc2api/oc2api
+module github.com/dingguotu/oc2cap
 
 go 1.26.0
 

@@ -10,7 +10,7 @@ import (
 // ocAuthView is the subset of the selected auth the executor needs. A
 // synthetic auth file looks like:
 //
-//	{"type":"oc2api","label":"OpenCode free (anonymous)","proxy_url":"http://user:pass@host:port"}
+//	{"type":"oc2cap","label":"OpenCode free (anonymous)","proxy_url":"http://user:pass@host:port"}
 type ocAuthView struct {
 	Holder   string
 	ProxyURL string
@@ -98,7 +98,7 @@ type hostAuthListResponse struct {
 
 // bootstrapAuthOnce creates the synthetic auth file on first registration so
 // the plugin is usable right after the two-line config.yaml addition. Failure
-// is non-fatal: the user can also drop an oc2api.json into auth-dir manually.
+// is non-fatal: the user can also drop an oc2cap.json into auth-dir manually.
 func bootstrapAuthOnce() {
 	responseBytes, err := goHostCall(pluginabi.MethodHostAuthList, []byte("{}"))
 	if err != nil {
@@ -123,6 +123,6 @@ func bootstrapAuthOnce() {
 		Name: providerName + ".json",
 		JSON: json.RawMessage(payload),
 	}); err != nil {
-		fsDebugLog("auto-bootstrap oc2api.json auth file failed: " + err.Error())
+		fsDebugLog("auto-bootstrap oc2cap.json auth file failed: " + err.Error())
 	}
 }

@@ -35,7 +35,7 @@ var staticCatalogOrder = []string{
 	"glm-5.3-flash-free",
 }
 
-// isAllowedModelID mirrors the original oc2api whitelist: the fixed model
+// isAllowedModelID mirrors the original server's whitelist: the fixed model
 // big-pickle plus every model whose id ends with -free.
 func isAllowedModelID(id string) bool {
 	return id == "big-pickle" || strings.HasSuffix(id, "-free")

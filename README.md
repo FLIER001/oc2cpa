@@ -1,4 +1,4 @@
-# oc2api — OpenCode free models for CLIProxyAPI
+# oc2cap — OpenCode free models for CLIProxyAPI
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
@@ -6,9 +6,10 @@ An external [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI) plugin
 (c-shared library) that turns **OpenCode Zen free models** into a first-class
 CLIProxyAPI provider.
 
-This is a native Go port of the former Node.js oc2api server — the standalone
-proxy process and the extra HTTP hop are gone. The plugin runs inside the
-CLIProxyAPI host process and talks to the upstream directly.
+The plugin runs inside the CLIProxyAPI host process and talks to the upstream
+directly — no standalone proxy process, no extra HTTP hop. It is a native Go
+port of the original Node.js [zhuweiyou/oc2api](https://github.com/zhuweiyou/oc2api)
+server, renamed and repackaged as **oc2cap**.
 
 > 📌 OpenCode keeps shipping free models. `deepseek-v4.1-flash-free` and
 > `glm-5.3-flash-free` are the latest, both with a 200,000-token context and
@@ -21,7 +22,7 @@ CLIProxyAPI host process and talks to the upstream directly.
   translates Claude/Gemini-protocol clients into chat-completions before the
   request reaches this plugin.
 - **Reserved gate tool.** The free tier requires a `read` tool. The plugin
-  injects it, renames client tools into `oc2api_*` aliases (with `_1`, `_2`
+  injects it, renames client tools into `oc2cap_*` aliases (with `_1`, `_2`
   suffixes on collision), and restores the original names in responses —
   including names split across stream fragments.
 - **Stream-only upstream.** The upstream always streams SSE; the aggregate
@@ -35,13 +36,18 @@ CLIProxyAPI host process and talks to the upstream directly.
   (`invalid_request_error`), auth failures stay `401`/`403`
   (`authentication_error`), and plugin-side stream faults use `502`
   (`upstream_stream_error`). Errors are never masked as fake quotas.
+- **Transient-failure retry.** The free tier intermittently answers bare
+  `5xx` or transport errors; the plugin retries such pre-content failures
+  (3 attempts) before they surface, so a flaky moment does not cool the
+  credential down in the host.
 - **Watchdog timeouts.** First event within 30 s, body idle within 120 s, and
   a 1 s trailing window after `[DONE]` so late `usage` frames are still
   captured. The connect timeout only bounds dial + response headers — once
   the upstream starts streaming, generation is never cut short.
-- **Synthetic auth.** A single `oc2api.json` auth file (auto-created on first
+- **Synthetic auth.** A single `oc2cap.json` auth file (auto-created on first
   registration) keeps the plugin usable immediately; optionally set a
-  `proxy_url` inside it to give that credential its own exit IP.
+  `proxy_url` inside it to give that credential its own exit IP. Without it
+  the plugin falls back to the host's global `proxy-url`.
 
 ## Install
 
@@ -51,20 +57,21 @@ CLIProxyAPI host process and talks to the upstream directly.
 plugins:
   enabled: true
   store-sources:
-    - https://github.com/zhuweiyou/oc2api/releases/latest/download/registry.json
+    - https://github.com/dingguotu/oc2cap/releases/latest/download/registry.json
 ```
 
-Then install `oc2api` from the CLIProxyAPI management UI.
+Then install `oc2cap` from the CLIProxyAPI management UI.
 
 ### Manual
 
 ```bash
 # linux/amd64 example
-unzip oc2api_<version>_linux_amd64.zip     # contains oc2api.so at the zip root
-cp oc2api.so /path/to/cliproxyapi/plugins/
+unzip oc2cap_<version>_linux_amd64.zip     # contains oc2cap.so at the zip root
+cp oc2cap.so /path/to/cliproxyapi/plugins/
 ```
 
-Platform layout also works: `plugins/linux/amd64/oc2api.so`.
+Platform layout also works: `plugins/linux/amd64/oc2cap.so`. The plugin id is
+the library base name (`oc2cap`).
 
 ### Configuration
 
@@ -72,7 +79,7 @@ Platform layout also works: `plugins/linux/amd64/oc2api.so`.
 plugins:
   enabled: true
   configs:
-    oc2api:
+    oc2cap:
       enabled: true
       priority: 100
       upstream_base_url: https://opencode.ai/inference/v1
@@ -110,10 +117,9 @@ Data from [https://models.opencode.ai/api.json](https://models.opencode.ai/api.j
 Requires Go 1.26+. Build the shared library for the local machine:
 
 ```bash
-cd oc2api
-go build -buildmode=c-shared -o dist/oc2api.dll .        # Windows
-# go build -buildmode=c-shared -o dist/oc2api.so .        # linux
-# go build -buildmode=c-shared -o dist/oc2api.dylib .     # darwin
+go build -buildmode=c-shared -o dist/oc2cap.dll .        # Windows
+# go build -buildmode=c-shared -o dist/oc2cap.so .        # linux
+# go build -buildmode=c-shared -o dist/oc2cap.dylib .     # darwin
 ```
 
 Run the offline test suite:
@@ -129,10 +135,11 @@ produces `_linux_amd64`, `_linux_arm64`, `_darwin_amd64`, `_darwin_arm64`,
 `_windows_amd64`, and `_windows_arm64` zips plus `checksums.txt` and
 `registry.json`.
 
-## History
+## History & credits
 
-This project started as a standalone Node.js proxy of the same name
-(`npm start` server with local/Docker/Vercel deployment). As of the CLIProxyAPI
-plugin era it lives here as a pure Go plugin; the Node implementation was
-removed. Kudos to [zhuweiyou](https://github.com/zhuweiyou) — this repo retains
-the original project's identity and release channel.
+oc2cap is a fork of [zhuweiyou/oc2api](https://github.com/zhuweiyou/oc2api) —
+originally a standalone Node.js proxy, rewritten here as a pure Go c-shared
+CLIProxyAPI plugin, renamed, and maintained in this repository. All credit for
+the original protocol work and free-tier reverse engineering goes to
+[zhuweiyou](https://github.com/zhuweiyou). Licensed under MIT, see
+[LICENSE](LICENSE).

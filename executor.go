@@ -100,7 +100,7 @@ func openUpstreamChat(built *upstreamRequest) (*http.Response, error) {
 	}
 }
 
-// upstreamStatusFailure maps a non-2xx upstream response to the oc2api error
+// upstreamStatusFailure maps a non-2xx upstream response to the oc2cap error
 // semantics: connect/HTTP failures surface with their real status; only the
 // actual free-tier rate limit becomes 429.
 func upstreamStatusFailure(status int, message string) *ocError {
@@ -170,7 +170,7 @@ func handleExecute(requestJSON []byte) (pluginapi.ExecutorResponse, error) {
 // then returns the headers envelope), or the pre-emission failure that must be
 // surfaced as a JSON error envelope instead.
 //
-// This mirrors oc2api's send flow: failures before any content go out as a 502
+// This mirrors oc2cap's send flow: failures before any content go out as a 502
 // JSON body; failures after headers are committed go out as an SSE error event
 // plus stream close (without [DONE]).
 type streamPump struct {
@@ -202,7 +202,7 @@ func (p *streamPump) emitChunk(payload []byte) error {
 }
 
 // closeStream ends the host stream bridge. The error stays empty because
-// failures were already encoded as SSE error events, matching oc2api.
+// failures were already encoded as SSE error events, matching oc2cap.
 func (p *streamPump) closeStream() {
 	_, _ = goHostCallJson(pluginabi.MethodHostStreamClose, map[string]any{
 		"stream_id": p.streamID,
@@ -284,7 +284,7 @@ func (p *streamPump) pump() error {
 	}
 	done, doneErr := encoder.finish()
 	if doneErr != nil {
-		// assertCompleted failure: surfaces as a stream error like oc2api.
+		// assertCompleted failure: surfaces as a stream error like oc2cap.
 		if !p.started {
 			p.started = true
 			p.signal(nil)

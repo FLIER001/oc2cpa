@@ -13,7 +13,7 @@ import (
 // providerName is the stable identity of this provider: it is the executor and
 // auth provider key, the ModelResponse.Provider value, and the auth file "type"
 // this plugin recognizes.
-const providerName = "oc2api"
+const providerName = "oc2cap"
 
 // version is overridden at build time via -ldflags "-X main.version=x.y.z".
 var version = "0.0.0"
@@ -26,7 +26,7 @@ var settings = pluginSettings{
 }
 
 // pluginSettings holds the plugin-owned configuration keys under
-// plugins.configs.oc2api in config.yaml. The host passes the section (plus
+// plugins.configs.oc2cap in config.yaml. The host passes the section (plus
 // enabled/priority) as YAML to plugin.register/plugin.reconfigure.
 type pluginSettings struct {
 	UpstreamBaseURL  string
@@ -127,10 +127,10 @@ func registration() registrationPayload {
 		// rely on per-chunk request bodies or history chunks.
 		SchemaVersion: 6,
 		Metadata: pluginapi.Metadata{
-			Name:             "OC2API (OpenCode free models)",
+			Name:             "OC2CAP (OpenCode free models)",
 			Version:          version,
-			Author:           "zhuweiyou",
-			GitHubRepository: "https://github.com/zhuweiyou/oc2api",
+			Author:           "dingguotu",
+			GitHubRepository: "https://github.com/dingguotu/oc2cap",
 			ConfigFields: []pluginapi.ConfigField{
 				{
 					Name:        "upstream_base_url",
