@@ -1,12 +1,17 @@
-.vercel/
-node_modules/
-.idea/
-.env
-.env.*
-!.env.example
-oc2api
+# Go module build/test artifacts
+oc2api/dist/
+oc2api/*.exe
+oc2api/*.h
 *.log
+
+# Local host smoke-test sandbox
+/host-smoke/
+
+# Reference clones used during development only
+/CLIProxyAPI/
+/codebuddy-intl-cpa/
+
+# IDE / OS noise
+.idea/
+.vscode/
 .DS_Store
-coverage/
-.vercel
-.env*

@@ -1,0 +1,129 @@
+# oc2api — CLIProxyAPI 的 OpenCode 免费模型插件
+
+[English](README.md) | 简体中文
+
+一个 [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI) 外置插件
+（c-shared 动态库），把 **OpenCode Zen 免费模型** 变成 CLIProxyAPI 的一等
+provider。
+
+本项目是原 Node.js 版 oc2api 服务的纯 Go 移植——独立代理进程和多一跳 HTTP
+都去掉了，插件直接运行在 CLIProxyAPI 宿主进程内并直连上游。
+
+> 📌 OpenCode 在持续上新免费模型。`deepseek-v4.1-flash-free` 和
+> `glm-5.3-flash-free` 是最新的两个，均为 200,000 上下文、支持图片输入。
+> 模型对比见[免费模型](#免费模型)。
+
+## 插件做什么
+
+- **双端 OpenAI chat-completions。** 执行器声明了 `chat-completions`
+  输入/输出格式，宿主会自动把 Claude/Gemini 协议的客户端翻译成
+  chat-completions 再交给本插件。
+- **保留门禁工具。** 免费层要求必须带一个 `read` 工具。插件负责注入它，把
+  客户端工具改名成 `oc2api_*` 别名（重名时生成 `_1`、`_2` 后缀），并在响应
+  侧把名字还原回来——包括跨流分片拆开的工具名。
+- **上游只有流式。** 上游永远以 SSE 返回。客户端要非流式时，聚合器把整个
+  流重组成一个 JSON 响应；流式请求则逐帧透传，期间完成工具调用分片合并与
+  流索引规整。
+- **会话亲和。** 每个凭据 holder 一个合成 `ses_…` 会话，30 分钟内复用，随
+  全部 `x-opencode-session` 系列请求头发送。
+- **真实错误语义。** 只有上游真的限流才是 `429`（`rate_limit_error`）；参数
+  错误保持 `400`（`invalid_request_error`），鉴权失败保持 `401`/`403`
+  （`authentication_error`），插件侧流异常使用 `502`
+  （`upstream_stream_error`）。错误不会被一律伪装成额度不足。
+- **看门狗超时。** 首个事件 30 秒、正文空闲 120 秒，`[DONE]` 之后还有 1 秒
+  尾窗用来接住迟到的 `usage` 帧。建连超时只约束拨号与响应头——上游开始
+  出流之后，生成过程永远不会被中途掐断。
+- **合成凭据。** 一个 `oc2api.json` 凭据文件（首次注册时自动创建）即可使用；
+  需要独立出口 IP 时可在里面填写 `proxy_url`。
+
+## 安装
+
+### 插件商店（推荐）
+
+```yaml
+plugins:
+  enabled: true
+  store-sources:
+    - https://github.com/zhuweiyou/oc2api/releases/latest/download/registry.json
+```
+
+然后在 CLIProxyAPI 管理界面安装 `oc2api`。
+
+### 手动
+
+```bash
+# 以 linux/amd64 为例
+unzip oc2api_<版本>_linux_amd64.zip     # zip 根目录就是 oc2api.so
+cp oc2api.so /path/to/cliproxyapi/plugins/
+```
+
+也支持平台目录布局：`plugins/linux/amd64/oc2api.so`。
+
+### 配置
+
+```yaml
+plugins:
+  enabled: true
+  configs:
+    oc2api:
+      enabled: true
+      priority: 100
+      upstream_base_url: https://opencode.ai/inference/v1
+      connect_timeout_ms: 60000
+      dynamic_models: false
+```
+
+| 配置项 | 默认值 | 说明 |
+| --- | --- | --- |
+| `upstream_base_url` | `https://opencode.ai/inference/v1` | 上游地址，可指向本地中继 |
+| `connect_timeout_ms` | `60000` | 收到响应头前的等待毫秒数（1–600000） |
+| `dynamic_models` | `false` | 除内置目录外，再从上游 `/models` 发现 `-free` 模型 |
+
+无需 API Key——插件使用免费层要求的固定上游令牌鉴权。
+
+## 免费模型
+
+白名单放行 `big-pickle` 及所有以 `-free` 结尾的模型。常用且已验证的几个：
+
+| 模型 | 上下文 | 输出 | 图片输入 |
+| --- | --- | --- | --- |
+| `big-pickle` | 200,000 | 32,000 | ❌ |
+| `mimo-v2.6-flash-free` | 200,000 | 32,000 | ✅ |
+| `deepseek-v4.1-flash-free` | 200,000 | 32,000 | ✅ |
+| `glm-5.3-flash-free` | 200,000 | 32,000 | ✅ |
+
+数据来源于
+[https://models.opencode.ai/api.json](https://models.opencode.ai/api.json)
+（`limit` 与 `modalities` 字段），新模型可自行核实，或设置
+`dynamic_models: true` 自动拉取。
+
+## 开发
+
+需要 Go 1.26+。构建本机动态库：
+
+```bash
+cd oc2api
+go build -buildmode=c-shared -o dist/oc2api.dll .        # Windows
+# go build -buildmode=c-shared -o dist/oc2api.so .        # linux
+# go build -buildmode=c-shared -o dist/oc2api.dylib .     # darwin
+```
+
+离线测试：
+
+```bash
+go test ./...
+go vet ./...
+```
+
+跨平台构建与发布由
+[`.github/workflows/build.yml`](.github/workflows/build.yml) 自动完成：推送
+`v*` 标签会产出 `_linux_amd64`、`_linux_arm64`、`_darwin_amd64`、
+`_darwin_arm64`、`_windows_amd64`、`_windows_arm64` 六平台压缩包，外加
+`checksums.txt` 与 `registry.json`。
+
+## 历史
+
+本项目最初是同名的独立 Node.js 代理（`npm start`，支持本地/Docker/Vercel
+部署）。进入 CLIProxyAPI 插件时代后，这里只保留纯 Go 插件实现，Node 实现已
+移除。感谢 [zhuweiyou](https://github.com/zhuweiyou)——本仓库沿用原项目的
+身份与发布渠道。

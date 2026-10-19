@@ -1,0 +1,24 @@
+{
+  "schema_version": 2,
+  "plugins": [
+    {
+      "id": "oc2api",
+      "name": "OC2API (OpenCode free models)",
+      "description": "OpenCode Zen free models as a CLIProxyAPI plugin provider. Native Go port of the Node.js oc2api server: OpenAI chat-completions in/out, injects the reserved 'read' gate tool the free tier requires, aliases client tool names into oc2api_* and restores them in responses, reuses upstream sessions, aggregates the stream-only upstream into a non-streaming payload, keeps watchdog timeouts and real upstream error semantics (only true rate limits are 429).",
+      "author": "zhuweiyou",
+      "version": "0.1.0",
+      "release_tag": "v0.1.0",
+      "repository": "https://github.com/zhuweiyou/oc2api",
+      "homepage": "https://github.com/zhuweiyou/oc2api",
+      "license": "MIT",
+      "install": {
+        "type": "github-release"
+      },
+      "tags": [
+        "Provider",
+        "OpenCode",
+        "Free"
+      ]
+    }
+  ]
+}
