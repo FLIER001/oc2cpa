@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OC2CPA 用量面板</title>
+<style>
+  :root {
+    --bg: #f5f6f8; --card: #ffffff; --line: #e5e7eb; --text: #1f2328;
+    --muted: #6b7280; --accent: #2563eb; --ok: #16a34a; --bad: #dc2626;
+    --chip: #eef2ff;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 24px 18px 60px; background: var(--bg); color: var(--text);
+         font: 14px/1.55 -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; }
+  .wrap { max-width: 1080px; margin: 0 auto; }
+  header { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 18px; }
+  h1 { font-size: 20px; margin: 0; }
+  .sub { color: var(--muted); font-size: 12px; }
+  .spacer { flex: 1; }
+  button { font: inherit; border: 1px solid var(--line); background: #fff; border-radius: 8px;
+           padding: 6px 14px; cursor: pointer; }
+  button:hover { border-color: var(--accent); color: var(--accent); }
+  label.auto { display: flex; gap: 6px; align-items: center; color: var(--muted); font-size: 12px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 18px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+  .card .k { color: var(--muted); font-size: 12px; }
+  .card .v { font-size: 22px; font-weight: 650; margin-top: 2px; }
+  .card .s { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  table { width: 100%; border-collapse: collapse; background: var(--card); border: 1px solid var(--line);
+          border-radius: 12px; overflow: hidden; margin-bottom: 22px; }
+  th, td { padding: 8px 12px; text-align: right; border-top: 1px solid var(--line); white-space: nowrap; }
+  th:nth-child(-n+3), td:nth-child(-n+3) { text-align: left; }
+  thead th { background: #fafbfc; font-weight: 600; color: var(--muted); font-size: 12px; border-top: none; }
+  td.num { font-variant-numeric: tabular-nums; }
+  .ok { color: var(--ok); } .bad { color: var(--bad); }
+  .chip { display: inline-block; background: var(--chip); color: var(--accent); border-radius: 999px;
+          padding: 1px 10px; font-size: 11px; }
+  h2 { font-size: 15px; margin: 0 0 10px; }
+  .banner { display: none; background: #fef2f2; color: var(--bad); border: 1px solid #fecaca;
+            border-radius: 10px; padding: 10px 14px; margin-bottom: 14px; }
+  .keyform { display: none; max-width: 420px; margin: 60px auto 0; background: var(--card);
+             border: 1px solid var(--line); border-radius: 12px; padding: 22px; }
+  .keyform h2 { margin-top: 0; }
+  .keyform input { width: 100%; font: inherit; padding: 8px 10px; border: 1px solid var(--line);
+                   border-radius: 8px; margin: 10px 0 14px; }
+  .empty { color: var(--muted); padding: 30px; text-align: center; }
+  .time { color: var(--muted); font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>OC2CPA 用量面板</h1>
+      <div class="sub" id="gen-at">数据为宿主进程本次运行期间的内存记录</div>
+    </div>
+    <div class="spacer"></div>
+    <label class="auto"><input type="checkbox" id="auto" checked> 自动刷新（10s）</label>
+    <button id="refresh">刷新</button>
+  </header>
+
+  <div class="banner" id="banner"></div>
+
+  <div id="content" style="display:none">
+    <div class="cards">
+      <div class="card"><div class="k">请求总数</div><div class="v" id="c-req">–</div><div class="s" id="c-req-today">今日 –</div></div>
+      <div class="card"><div class="k">成功率</div><div class="v" id="c-rate">–</div><div class="s" id="c-rate-today">今日 –</div></div>
+      <div class="card"><div class="k">输入 tokens</div><div class="v" id="c-in">–</div><div class="s" id="c-in-today">今日 –</div></div>
+      <div class="card"><div class="k">输出 tokens</div><div class="v" id="c-out">–</div><div class="s" id="c-out-today">今日 –</div></div>
+      <div class="card"><div class="k">总 tokens</div><div class="v" id="c-total">–</div><div class="s" id="c-total-today">今日 –</div></div>
+    </div>
+
+    <h2>按模型统计</h2>
+    <table id="models"><thead>
+      <tr><th>模型</th><th>请求</th><th>成功</th><th>失败</th><th>输入</th><th>输出</th>
+          <th>思考</th><th>缓存</th><th>总计</th><th>最近使用</th></tr>
+    </thead><tbody></tbody></table>
+
+    <h2>最近请求</h2>
+    <table id="records"><thead>
+      <tr><th>时间</th><th>模型</th><th>类型</th><th>状态</th><th>输入</th><th>输出</th>
+          <th>总计</th><th>延迟</th><th>首字</th><th>调用方</th></tr>
+    </thead><tbody></tbody></table>
+  </div>
+
+  <form class="keyform" id="keyform">
+    <h2>需要管理密钥</h2>
+    <div style="color:var(--muted)">该面板的数据接口受 CLIProxyAPI 管理密钥保护，请输入后继续（保存于浏览器本地）。</div>
+    <input type="password" id="key" placeholder="management key">
+    <button type="submit" style="width:100%">保存并加载</button>
+  </form>
+</div>
+
+<script>
+const KEY_STORE = "oc2cpa_management_key";
+const API = "/v0/management/plugins/oc2cpa";
+const $ = id => document.getElementById(id);
+const fmt = n => (n ?? 0).toLocaleString("zh-CN");
+const shortTime = s => (s || "").replace("T", " ").replace(/[+-]\d\d(:\d\d)?$/, "");
+
+function getKey() { try { return localStorage.getItem(KEY_STORE) || ""; } catch { return ""; } }
+function headers() {
+  const h = { };
+  const key = getKey();
+  if (key) h["Authorization"] = "Bearer " + key;
+  return h;
+}
+async function api(path) {
+  const resp = await fetch(API + path, { headers: headers() });
+  if (resp.status === 401 || resp.status === 403) {
+    $('keyform').style.display = 'block';
+    throw new Error("需要管理密钥");
+  }
+  if (!resp.ok) throw new Error("HTTP " + resp.status);
+  return resp.json();
+}
+function bucketCards(b, suffix, t) {
+  $('c-req' + suffix).textContent = fmt(b.requests);
+  $('c-req-today').textContent = t;
+  const rate = b.requests ? Math.round(100 * b.success / b.requests) : null;
+  $('c-rate' + suffix).textContent = rate === null ? "–" : rate + "%";
+  $('c-rate-today').textContent = t;
+  $('c-in' + suffix).textContent = shortNum(b.input_tokens);
+  $('c-in-today').textContent = t;
+  $('c-out' + suffix).textContent = shortNum(b.output_tokens);
+  $('c-out-today').textContent = t;
+  $('c-total' + suffix).textContent = shortNum(b.total_tokens);
+  $('c-total-today').textContent = t;
+}
+function shortNum(n) {
+  n = n ?? 0;
+  if (n >= 1e6) return (n / 1e6).toFixed(2) + "M";
+  if (n >= 1e4) return (n / 1e4).toFixed(1) + "w";
+  return fmt(n);
+}
+function render(summary, records) {
+  $('content').style.display = '';
+  bucketCards(summary.all, "", "全部（本次进程）");
+  $('gen-at').textContent = ("记录窗口 " + summary.records + "/" + summary.window_cap +
+       " · 更新于 " + new Date().toLocaleTimeString());
+  const mb = $('models').tBodies[0];
+  mb.innerHTML = "";
+  if (!summary.models.length) mb.innerHTML = '<tr><td colspan="10" class="empty">暂无请求</td></tr>';
+  for (const m of summary.models) {
+    mb.insertAdjacentHTML("beforeend", `<tr>
+      <td><span class="chip">${esc(m.model)}</span></td>
+      <td class="num">${fmt(m.requests)}</td>
+      <td class="num ok">${fmt(m.success)}</td>
+      <td class="num ${m.failed ? 'bad' : ''}">${fmt(m.failed)}</td>
+      <td class="num">${fmt(m.input_tokens)}</td>
+      <td class="num">${fmt(m.output_tokens)}</td>
+      <td class="num">${fmt(m.reasoning_tokens)}</td>
+      <td class="num">${fmt(m.cached_tokens)}</td>
+      <td class="num"><b>${fmt(m.total_tokens)}</b></td>
+      <td class="time">${shortTime(m.last_used)}</td></tr>`);
+  }
+  const tb = $('records').tBodies[0];
+  tb.innerHTML = "";
+  if (!(records.records || []).length) tb.innerHTML = '<tr><td colspan="10" class="empty">暂无请求</td></tr>';
+  for (const r of records.records.slice().reverse()) {
+    const type = r.stream ? '<span class="chip">流式</span>' : "非流式";
+    const status = r.failed ? `<span class="bad">${r.status || "失败"}</span>` : '<span class="ok">OK</span>';
+    tb.insertAdjacentHTML("beforeend", `<tr>
+      <td class="time">${shortTime(r.time)}</td>
+      <td>${esc(r.alias || r.model)}</td>
+      <td>${type}</td>
+      <td>${status}</td>
+      <td class="num">${fmt(r.input_tokens)}</td>
+      <td class="num">${fmt(r.output_tokens)}</td>
+      <td class="num"><b>${fmt(r.total_tokens)}</b></td>
+      <td class="num">${r.latency_ms}ms</td>
+      <td class="num">${r.ttft_ms || "-"}</td>
+      <td class="time">${esc(r.api_key || "")}</td></tr>`);
+  }
+}
+function esc(s) { const d = document.createElement("div"); d.textContent = s ?? ""; return d.innerHTML; }
+function banner(msg) {
+  const b = $('banner');
+  if (!msg) { b.style.display = 'none'; return; }
+  b.textContent = msg; b.style.display = 'block';
+}
+let timer = null;
+async function load() {
+  try {
+    const [summary, records] = await Promise.all([api("/usage/summary"), api("/usage/records?limit=100")]);
+    banner(null);
+    $('keyform').style.display = 'none';
+    render(summary, records);
+  } catch (e) {
+    if (String(e.message) === "需要管理密钥") return;
+    banner("加载失败：" + e.message);
+  }
+}
+$('refresh').onclick = load;
+$('auto').onchange = () => {
+  if (timer) { clearInterval(timer); timer = null; }
+  if ($('auto').checked) timer = setInterval(load, 10000);
+};
+$('keyform').onsubmit = ev => {
+  ev.preventDefault();
+  const k = $('key').value.trim();
+  if (!k) return;
+  try { localStorage.setItem(KEY_STORE, k); } catch {}
+  $('keyform').style.display = 'none';
+  load();
+};
+timer = setInterval(load, 10000);
+load();
+</script>
+</body>
+</html>

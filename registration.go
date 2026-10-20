@@ -171,7 +171,7 @@ func registration() registrationPayload {
 			"executor_model_scope":    "both",
 			"executor_input_formats":  []string{"chat-completions"},
 			"executor_output_formats": []string{"chat-completions"},
-			"management_api":          false,
+			"management_api":          true,
 			"usage_plugin":            true,
 			"scheduler":               false,
 			"frontend_auth_provider":  false,

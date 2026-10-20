@@ -238,6 +238,18 @@ func handleMethod(method string, requestJSON []byte) ([]byte, error) {
 			return marshalErrorEnvelope("usage_log_failed", err.Error()), nil
 		}
 		return marshalOKEnvelope(struct{}{}), nil
+	case pluginabi.MethodManagementRegister:
+		payload, mgmtErr := handleManagementRoutes(requestJSON)
+		if mgmtErr != nil {
+			return marshalErrorEnvelope("management_register_failed", mgmtErr.Error()), nil
+		}
+		return marshalOKEnvelope(payload), nil
+	case pluginabi.MethodManagementHandle:
+		resp, mgmtErr := handleManagement(requestJSON)
+		if mgmtErr != nil {
+			return marshalErrorEnvelope("management_handle_failed", mgmtErr.Error()), nil
+		}
+		return marshalOKEnvelope(resp), nil
 	default:
 		return marshalErrorEnvelope("unknown_method", "unknown method: "+method), nil
 	}
