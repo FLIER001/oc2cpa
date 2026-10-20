@@ -178,8 +178,8 @@ function bucketCards(b, suffix, t) {
 function shortNum(n) {
   n = n ?? 0;
   if (n >= 1e6) return (n / 1e6).toFixed(2) + "M";
-  if (n >= 1e4) return (n / 1e4).toFixed(1) + "w";
-  return fmt(n);
+  if (n >= 1e3) return (n / 1e3).toFixed(1) + "K";
+  return String(n);
 }
 function render(summary, records) {
   $('content').style.display = '';
@@ -195,11 +195,11 @@ function render(summary, records) {
       <td class="num">${fmt(m.requests)}</td>
       <td class="num ok">${fmt(m.success)}</td>
       <td class="num ${m.failed ? 'bad' : ''}">${fmt(m.failed)}</td>
-      <td class="num">${fmt(m.input_tokens)}</td>
-      <td class="num">${fmt(m.output_tokens)}</td>
-      <td class="num">${fmt(m.reasoning_tokens)}</td>
-      <td class="num">${fmt(m.cached_tokens)}</td>
-      <td class="num"><b>${fmt(m.total_tokens)}</b></td>
+      <td class="num">${shortNum(m.input_tokens)}</td>
+      <td class="num">${shortNum(m.output_tokens)}</td>
+      <td class="num">${shortNum(m.reasoning_tokens)}</td>
+      <td class="num">${shortNum(m.cached_tokens)}</td>
+      <td class="num"><b>${shortNum(m.total_tokens)}</b></td>
       <td class="time">${shortTime(m.last_used)}</td></tr>`);
   }
   const tb = $('records').tBodies[0];
@@ -213,9 +213,9 @@ function render(summary, records) {
       <td>${esc(r.alias || r.model)}</td>
       <td>${type}</td>
       <td>${status}</td>
-      <td class="num">${fmt(r.input_tokens)}</td>
-      <td class="num">${fmt(r.output_tokens)}</td>
-      <td class="num"><b>${fmt(r.total_tokens)}</b></td>
+      <td class="num">${shortNum(r.input_tokens)}</td>
+      <td class="num">${shortNum(r.output_tokens)}</td>
+      <td class="num"><b>${shortNum(r.total_tokens)}</b></td>
       <td class="num">${r.latency_ms}ms</td>
       <td class="num">${r.ttft_ms || "-"}</td>
       <td class="time">${esc(r.api_key || "")}</td></tr>`);
