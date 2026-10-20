@@ -130,6 +130,23 @@ key is redacted to a short prefix). Failed requests include the upstream
 CLIProxyAPI's own usage database, so the management UI statistics page shows
 them as well. Set `usage_log: false` to silence the console lines.
 
+## Usage panel
+
+The plugin also exposes a small web dashboard through the CLIProxyAPI
+management surface:
+
+- Panel page: `/v0/resource/plugins/oc2cpa/panel` (aggregate cards for today
+  and the whole window, per-model token stats, and the recent request list,
+  auto-refreshing every 10 s).
+- Data APIs: `GET /v0/management/plugins/oc2cpa/usage/summary` and
+  `GET /v0/management/plugins/oc2cpa/usage/records?limit=100` (management
+  key required, the page asks for it once and stores it locally).
+
+The panel statistics come from the plugin's in-memory window (the latest
+1000 requests since host start); durable totals stay in CLIProxyAPI's own
+usage database. The registered resource also appears as an "OC2CPA Usage"
+menu entry in the management UI when the frontend supports plugin resources.
+
 ## Development
 
 Requires Go 1.26+. Build the shared library for the local machine:

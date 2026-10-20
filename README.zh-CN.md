@@ -120,6 +120,20 @@ Key 已打码为前缀）；失败请求会带上游 `status` 码。同样的指
 写入用量数据库，管理界面的统计页可以看到。`usage_log: false` 可关闭控制台
 输出。
 
+## 用量面板
+
+插件同时通过 CLIProxyAPI 管理接口暴露了一个小型 Web 仪表盘：
+
+- 面板页面：`/v0/resource/plugins/oc2cpa/panel`（今日与全程的汇总卡片、
+  按模型 token 统计、最近请求列表，每 10 秒自动刷新）。
+- 数据接口：`GET /v0/management/plugins/oc2cpa/usage/summary` 与
+  `GET /v0/management/plugins/oc2cpa/usage/records?limit=100`
+  （需要管理密钥；页面首次会要求输入一次，保存在浏览器本地）。
+
+面板统计来自插件进程内的记录窗口（宿主启动以来最近 1000 条请求）；持久
+汇总仍在 CLIProxyAPI 自己的用量数据库里。管理前端支持插件资源时，该资源
+会以 “OC2CPA Usage” 菜单项出现在管理界面中。
+
 ## 开发
 
 需要 Go 1.26+。构建本机动态库：
