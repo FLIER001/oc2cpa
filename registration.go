@@ -137,6 +137,7 @@ func registration() registrationPayload {
 			Version:          version,
 			Author:           "dingguotu",
 			GitHubRepository: "https://github.com/dingguotu/oc2cpa",
+			Logo:             "https://opencode.ai/favicon.svg",
 			ConfigFields: []pluginapi.ConfigField{
 				{
 					Name:        "upstream_base_url",

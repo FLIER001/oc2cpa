@@ -144,8 +144,9 @@ management surface:
 
 The panel statistics come from the plugin's in-memory window (the latest
 1000 requests since host start); durable totals stay in CLIProxyAPI's own
-usage database. The registered resource also appears as an "OC2CPA Usage"
-menu entry in the management UI when the frontend supports plugin resources.
+usage database. The registered resource also appears as an "OC2CPA"
+menu entry (with the OpenCode logo) in the management UI when the frontend
+supports plugin resources.
 
 ## Development
 

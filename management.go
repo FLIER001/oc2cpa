@@ -91,7 +91,7 @@ func handleManagementRoutes(requestJSON []byte) (managementRegistrationPayload, 
 			{Method: http.MethodGet, Path: base + "/usage/records", Description: "Recent per-request records (model, latency, tokens, failure status). Query: limit (default 100, max window)."},
 		},
 		Resources: []pluginManagementResource{
-			{Path: "/panel", Menu: "OC2CPA Usage", Description: "OC2CPA usage dashboard: request counts, token consumption, per-model stats and the recent request log."},
+			{Path: "/panel", Menu: "OC2CPA", Description: "OC2CPA usage dashboard: request counts, token consumption, per-model stats and the recent request log."},
 		},
 	}
 	return payload, nil
