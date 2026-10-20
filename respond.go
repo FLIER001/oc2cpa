@@ -499,8 +499,8 @@ func (p *eventParser) restoreFunctionName(fn map[string]any, target *callIdentit
 	name := target.upstreamName
 	next := copyObject(fn)
 	candidates := p.ctx.candidates()
-	// A full tool name can also be a prefix of another name (oc2cap_read vs.
-	// the oc2cap_read_1 alias generated for a colliding client read), so the
+	// A full tool name can also be a prefix of another name (oc2cpa_read vs.
+	// the oc2cpa_read_1 alias generated for a colliding client read), so the
 	// decision is deferred until arguments exist.
 	if !argsTruthy(fn) {
 		for _, candidate := range candidates {

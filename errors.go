@@ -55,7 +55,7 @@ func mapUpstreamFailure(status int, message string) failure {
 	}
 }
 
-// failure is the mapped oc2cap-style error block.
+// failure is the mapped oc2cpa-style error block.
 type failure struct {
 	Message string
 	Type    string

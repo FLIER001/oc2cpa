@@ -1,4 +1,4 @@
-# oc2cap — OpenCode free models for CLIProxyAPI
+# oc2cpa — OpenCode free models for CLIProxyAPI
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
@@ -9,7 +9,7 @@ CLIProxyAPI provider.
 The plugin runs inside the CLIProxyAPI host process and talks to the upstream
 directly — no standalone proxy process, no extra HTTP hop. It is a native Go
 port of the original Node.js [zhuweiyou/oc2api](https://github.com/zhuweiyou/oc2api)
-server, renamed and repackaged as **oc2cap**.
+server, renamed and repackaged as **oc2cpa**.
 
 > 📌 OpenCode keeps shipping free models. `deepseek-v4.1-flash-free` and
 > `glm-5.3-flash-free` are the latest, both with a 200,000-token context and
@@ -22,7 +22,7 @@ server, renamed and repackaged as **oc2cap**.
   translates Claude/Gemini-protocol clients into chat-completions before the
   request reaches this plugin.
 - **Reserved gate tool.** The free tier requires a `read` tool. The plugin
-  injects it, renames client tools into `oc2cap_*` aliases (with `_1`, `_2`
+  injects it, renames client tools into `oc2cpa_*` aliases (with `_1`, `_2`
   suffixes on collision), and restores the original names in responses —
   including names split across stream fragments.
 - **Stream-only upstream.** The upstream always streams SSE; the aggregate
@@ -44,7 +44,7 @@ server, renamed and repackaged as **oc2cap**.
   a 1 s trailing window after `[DONE]` so late `usage` frames are still
   captured. The connect timeout only bounds dial + response headers — once
   the upstream starts streaming, generation is never cut short.
-- **Synthetic auth.** A single `oc2cap.json` auth file (auto-created on first
+- **Synthetic auth.** A single `oc2cpa.json` auth file (auto-created on first
   registration) keeps the plugin usable immediately; optionally set a
   `proxy_url` inside it to give that credential its own exit IP. Without it
   the plugin falls back to the host's global `proxy-url`.
@@ -57,21 +57,21 @@ server, renamed and repackaged as **oc2cap**.
 plugins:
   enabled: true
   store-sources:
-    - https://github.com/dingguotu/oc2cap/releases/latest/download/registry.json
+    - https://github.com/dingguotu/oc2cpa/releases/latest/download/registry.json
 ```
 
-Then install `oc2cap` from the CLIProxyAPI management UI.
+Then install `oc2cpa` from the CLIProxyAPI management UI.
 
 ### Manual
 
 ```bash
 # linux/amd64 example
-unzip oc2cap_<version>_linux_amd64.zip     # contains oc2cap.so at the zip root
-cp oc2cap.so /path/to/cliproxyapi/plugins/
+unzip oc2cpa_<version>_linux_amd64.zip     # contains oc2cpa.so at the zip root
+cp oc2cpa.so /path/to/cliproxyapi/plugins/
 ```
 
-Platform layout also works: `plugins/linux/amd64/oc2cap.so`. The plugin id is
-the library base name (`oc2cap`).
+Platform layout also works: `plugins/linux/amd64/oc2cpa.so`. The plugin id is
+the library base name (`oc2cpa`).
 
 ### Configuration
 
@@ -79,7 +79,7 @@ the library base name (`oc2cap`).
 plugins:
   enabled: true
   configs:
-    oc2cap:
+    oc2cpa:
       enabled: true
       priority: 100
       upstream_base_url: https://opencode.ai/inference/v1
@@ -117,9 +117,9 @@ Data from [https://models.opencode.ai/api.json](https://models.opencode.ai/api.j
 Requires Go 1.26+. Build the shared library for the local machine:
 
 ```bash
-go build -buildmode=c-shared -o dist/oc2cap.dll .        # Windows
-# go build -buildmode=c-shared -o dist/oc2cap.so .        # linux
-# go build -buildmode=c-shared -o dist/oc2cap.dylib .     # darwin
+go build -buildmode=c-shared -o dist/oc2cpa.dll .        # Windows
+# go build -buildmode=c-shared -o dist/oc2cpa.so .        # linux
+# go build -buildmode=c-shared -o dist/oc2cpa.dylib .     # darwin
 ```
 
 Run the offline test suite:
@@ -137,7 +137,7 @@ produces `_linux_amd64`, `_linux_arm64`, `_darwin_amd64`, `_darwin_arm64`,
 
 ## History & credits
 
-oc2cap is a fork of [zhuweiyou/oc2api](https://github.com/zhuweiyou/oc2api) —
+oc2cpa is a fork of [zhuweiyou/oc2api](https://github.com/zhuweiyou/oc2api) —
 originally a standalone Node.js proxy, rewritten here as a pure Go c-shared
 CLIProxyAPI plugin, renamed, and maintained in this repository. All credit for
 the original protocol work and free-tier reverse engineering goes to

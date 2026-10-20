@@ -1,4 +1,4 @@
-module github.com/dingguotu/oc2cap
+module github.com/dingguotu/oc2cpa
 
 go 1.26.0
 

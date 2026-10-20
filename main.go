@@ -1,8 +1,8 @@
-// Package main implements the oc2cap plugin for CLIProxyAPI.
+// Package main implements the oc2cpa plugin for CLIProxyAPI.
 //
 // The plugin wraps the OpenCode Zen free model endpoint (opencode.ai/inference/v1)
 // as a CLIProxyAPI provider: it speaks OpenAI chat-completions both ways, injects the
-// reserved "read" gate tool the free tier requires, renames client tools into oc2cap_*
+// reserved "read" gate tool the free tier requires, renames client tools into oc2cpa_*
 // aliases, restores them in responses, and aggregates the stream-only upstream into a
 // non-streaming payload when the client asked for one.
 //
@@ -231,7 +231,13 @@ func handleMethod(method string, requestJSON []byte) ([]byte, error) {
 	case pluginabi.MethodExecutorExecuteStream:
 		return handleExecuteStream(requestJSON)
 	case pluginabi.MethodExecutorCountTokens:
-		return marshalErrorEnvelope("unsupported_method", "count_tokens is not supported by oc2cap"), nil
+		return marshalErrorEnvelope("unsupported_method", "count_tokens is not supported by oc2cpa"), nil
+
+	case pluginabi.MethodUsageHandle:
+		if err := handleUsage(requestJSON); err != nil {
+			return marshalErrorEnvelope("usage_log_failed", err.Error()), nil
+		}
+		return marshalOKEnvelope(struct{}{}), nil
 	default:
 		return marshalErrorEnvelope("unknown_method", "unknown method: "+method), nil
 	}

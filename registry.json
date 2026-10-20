@@ -2,14 +2,14 @@
   "schema_version": 2,
   "plugins": [
     {
-      "id": "oc2cap",
-      "name": "OC2CAP (OpenCode free models)",
-      "description": "OpenCode Zen free models as a CLIProxyAPI plugin provider. Go c-shared port of the original Node.js oc2api server: OpenAI chat-completions in/out, injects the reserved 'read' gate tool the free tier requires, aliases client tool names into oc2cap_* and restores them in responses, reuses upstream sessions, aggregates the stream-only upstream into a non-streaming payload, keeps watchdog timeouts and real upstream error semantics (only true rate limits are 429).",
+      "id": "oc2cpa",
+      "name": "OC2CPA (OpenCode free models)",
+      "description": "OpenCode Zen free models as a CLIProxyAPI plugin provider. Go c-shared port of the original Node.js oc2api server: OpenAI chat-completions in/out, injects the reserved 'read' gate tool the free tier requires, aliases client tool names into oc2cpa_* and restores them in responses, reuses upstream sessions, aggregates the stream-only upstream into a non-streaming payload, keeps watchdog timeouts and real upstream error semantics (only true rate limits are 429).",
       "author": "dingguotu",
-      "version": "0.2.0",
-      "release_tag": "v0.2.0",
-      "repository": "https://github.com/dingguotu/oc2cap",
-      "homepage": "https://github.com/dingguotu/oc2cap",
+      "version": "0.3.0",
+      "release_tag": "v0.3.0",
+      "repository": "https://github.com/dingguotu/oc2cpa",
+      "homepage": "https://github.com/dingguotu/oc2cpa",
       "license": "MIT",
       "install": {
         "type": "github-release"

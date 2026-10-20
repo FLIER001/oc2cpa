@@ -56,7 +56,7 @@ var dangerousKeys = []string{"__proto__", "constructor", "prototype"}
 // response layer to restore names and reject reserved tool calls.
 type upstreamRequest struct {
 	Body              []byte
-	Aliases           map[string]string // oc2cap_read → read (alias → original)
+	Aliases           map[string]string // oc2cpa_read → read (alias → original)
 	ReservedToolNames []string
 	ClientToolNames   []string
 	ToolsDisabled     bool
@@ -195,7 +195,7 @@ type gatePhase struct {
 	names map[string]string // original → alias
 }
 
-// withGateTools renames client tool objects into oc2cap_* aliases and appends
+// withGateTools renames client tool objects into oc2cpa_* aliases and appends
 // the reserved gate tool. Duplicate names are skipped; alias collisions are
 // resolved with _1, _2 suffixes (the same algorithm as the original).
 func withGateTools(toolsDisabled bool, clientTools []any) gatePhase {
@@ -226,7 +226,7 @@ func withGateTools(toolsDisabled bool, clientTools []any) gatePhase {
 		if _, seen := names[name]; seen {
 			continue
 		}
-		base := ("oc2cap_" + sanitizeToolName(name))[:clampIndex("oc2cap_"+sanitizeToolName(name), 60)]
+		base := ("oc2cpa_" + sanitizeToolName(name))[:clampIndex("oc2cpa_"+sanitizeToolName(name), 60)]
 		alias := base
 		suffix := 1
 		for present[alias] {

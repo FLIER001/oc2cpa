@@ -46,7 +46,7 @@ func sharedHTTPClient() *http.Client {
 
 // clientForAuth returns (and caches) an HTTP client honoring the optional
 // proxy_url stored in the auth file, so multiple auth files can use different
-// exit IPs the way the original deployment ran one oc2cap instance per IP.
+// exit IPs the way the original deployment ran one oc2cpa instance per IP.
 // An auth without its own proxy falls back to the host's global proxy-url.
 // socks5/socks5h proxies are ignored by the stdlib transport and pass through;
 // unsupported schemes are logged and skipped.
@@ -136,9 +136,9 @@ func newUpstreamModelsRequest(modelsURL string) (*http.Request, error) {
 }
 
 func fsDebugLog(message string) {
-	// The host captures plugin stderr, so anything printed here surfaces in
-	// host logs prefixed with the plugin name.
-	fmt.Fprintln(os.Stderr, "[oc2cap] "+message)
+	// The c-shared plugin shares the host process, so this writes to the
+	// host's stderr — the same stream CLIProxyAPI's console logger uses.
+	fmt.Fprintln(os.Stderr, "[oc2cpa] "+message)
 }
 
 // ioReadAll small helper for bounded model-list reads.

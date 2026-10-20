@@ -1,4 +1,4 @@
-# oc2cap — CLIProxyAPI 的 OpenCode 免费模型插件
+# oc2cpa — CLIProxyAPI 的 OpenCode 免费模型插件
 
 [English](README.md) | 简体中文
 
@@ -9,7 +9,7 @@ provider。
 插件直接运行在 CLIProxyAPI 宿主进程内并直连上游——没有独立代理进程，也
 没有多一跳 HTTP。本项目是原 Node.js 服务
 [zhuweiyou/oc2api](https://github.com/zhuweiyou/oc2api) 的纯 Go 移植，在此
-更名为 **oc2cap** 并维护。
+更名为 **oc2cpa** 并维护。
 
 > 📌 OpenCode 在持续上新免费模型。`deepseek-v4.1-flash-free` 和
 > `glm-5.3-flash-free` 是最新的两个，均为 200,000 上下文、支持图片输入。
@@ -21,7 +21,7 @@ provider。
   输入/输出格式，宿主会自动把 Claude/Gemini 协议的客户端翻译成
   chat-completions 再交给本插件。
 - **保留门禁工具。** 免费层要求必须带一个 `read` 工具。插件负责注入它，把
-  客户端工具改名成 `oc2cap_*` 别名（重名时生成 `_1`、`_2` 后缀），并在响应
+  客户端工具改名成 `oc2cpa_*` 别名（重名时生成 `_1`、`_2` 后缀），并在响应
   侧把名字还原回来——包括跨流分片拆开的工具名。
 - **上游只有流式。** 上游永远以 SSE 返回。客户端要非流式时，聚合器把整个
   流重组成一个 JSON 响应；流式请求则逐帧透传，期间完成工具调用分片合并与
@@ -38,7 +38,7 @@ provider。
 - **看门狗超时。** 首个事件 30 秒、正文空闲 120 秒，`[DONE]` 之后还有 1 秒
   尾窗用来接住迟到的 `usage` 帧。建连超时只约束拨号与响应头——上游开始
   出流之后，生成过程永远不会被中途掐断。
-- **合成凭据。** 一个 `oc2cap.json` 凭据文件（首次注册时自动创建）即可使用；
+- **合成凭据。** 一个 `oc2cpa.json` 凭据文件（首次注册时自动创建）即可使用；
   需要独立出口 IP 时可在里面填写 `proxy_url`；未填则回退使用宿主的全局
   `proxy-url`。
 
@@ -50,21 +50,21 @@ provider。
 plugins:
   enabled: true
   store-sources:
-    - https://github.com/dingguotu/oc2cap/releases/latest/download/registry.json
+    - https://github.com/dingguotu/oc2cpa/releases/latest/download/registry.json
 ```
 
-然后在 CLIProxyAPI 管理界面安装 `oc2cap`。
+然后在 CLIProxyAPI 管理界面安装 `oc2cpa`。
 
 ### 手动
 
 ```bash
 # 以 linux/amd64 为例
-unzip oc2cap_<版本>_linux_amd64.zip     # zip 根目录就是 oc2cap.so
-cp oc2cap.so /path/to/cliproxyapi/plugins/
+unzip oc2cpa_<版本>_linux_amd64.zip     # zip 根目录就是 oc2cpa.so
+cp oc2cpa.so /path/to/cliproxyapi/plugins/
 ```
 
-也支持平台目录布局：`plugins/linux/amd64/oc2cap.so`。插件 id 即动态库文件
-名（去掉扩展名，`oc2cap`）。
+也支持平台目录布局：`plugins/linux/amd64/oc2cpa.so`。插件 id 即动态库文件
+名（去掉扩展名，`oc2cpa`）。
 
 ### 配置
 
@@ -72,7 +72,7 @@ cp oc2cap.so /path/to/cliproxyapi/plugins/
 plugins:
   enabled: true
   configs:
-    oc2cap:
+    oc2cpa:
       enabled: true
       priority: 100
       upstream_base_url: https://opencode.ai/inference/v1
@@ -109,9 +109,9 @@ plugins:
 需要 Go 1.26+。构建本机动态库：
 
 ```bash
-go build -buildmode=c-shared -o dist/oc2cap.dll .        # Windows
-# go build -buildmode=c-shared -o dist/oc2cap.so .        # linux
-# go build -buildmode=c-shared -o dist/oc2cap.dylib .     # darwin
+go build -buildmode=c-shared -o dist/oc2cpa.dll .        # Windows
+# go build -buildmode=c-shared -o dist/oc2cpa.so .        # linux
+# go build -buildmode=c-shared -o dist/oc2cpa.dylib .     # darwin
 ```
 
 离线测试：
@@ -129,7 +129,7 @@ go vet ./...
 
 ## 历史与致谢
 
-oc2cap 基于 [zhuweiyou/oc2api](https://github.com/zhuweiyou/oc2api) 修改——
+oc2cpa 基于 [zhuweiyou/oc2api](https://github.com/zhuweiyou/oc2api) 修改——
 原项目是独立 Node.js 代理，这里将其重写为纯 Go 的 CLIProxyAPI c-shared 插
 件、更名并在本仓库维护。原协议工作与免费层逆向的成果完全归功于
 [zhuweiyou](https://github.com/zhuweiyou)。许可为 MIT，见

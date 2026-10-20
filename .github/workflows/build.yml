@@ -1,4 +1,4 @@
-# Multi-arch build & release for the oc2cap CLIProxyAPI plugin (Go c-shared port
+# Multi-arch build & release for the oc2cpa CLIProxyAPI plugin (Go c-shared port
 # of the original Node.js oc2api proxy).
 #
 #   - tag 'v*'          → release that version (the official CLIProxyAPI plugin
@@ -48,7 +48,7 @@ jobs:
         run: go vet ./...
 
   build:
-    name: oc2cap ${{ matrix.goos }}/${{ matrix.goarch }}
+    name: oc2cpa ${{ matrix.goos }}/${{ matrix.goarch }}
     needs: test
     runs-on: ${{ matrix.runner }}
     strategy:
@@ -98,9 +98,9 @@ jobs:
           fi
           CLEAN_VERSION="${VERSION%%+*}"
           echo "VERSION=${CLEAN_VERSION}" >> "${GITHUB_ENV}"
-          echo "LIB_NAME=oc2cap.${{ matrix.ext }}" >> "${GITHUB_ENV}"
-          echo "ARCHIVE_NAME=oc2cap_${CLEAN_VERSION}_${{ matrix.goos }}_${{ matrix.goarch }}.zip" >> "${GITHUB_ENV}"
-          echo "version=${CLEAN_VERSION} archive=oc2cap_${CLEAN_VERSION}_${{ matrix.goos }}_${{ matrix.goarch }}.zip"
+          echo "LIB_NAME=oc2cpa.${{ matrix.ext }}" >> "${GITHUB_ENV}"
+          echo "ARCHIVE_NAME=oc2cpa_${CLEAN_VERSION}_${{ matrix.goos }}_${{ matrix.goarch }}.zip" >> "${GITHUB_ENV}"
+          echo "version=${CLEAN_VERSION} archive=oc2cpa_${CLEAN_VERSION}_${{ matrix.goos }}_${{ matrix.goarch }}.zip"
 
       - name: Build shared library
         env:
@@ -153,7 +153,7 @@ jobs:
           if-no-files-found: error
 
   build-cross:
-    name: oc2cap ${{ matrix.target }} (go-cross)
+    name: oc2cpa ${{ matrix.target }} (go-cross)
     needs: test
     runs-on: ubuntu-24.04
     strategy:
@@ -184,8 +184,8 @@ jobs:
           GOOS_PART="${{ matrix.target }}"
           echo "VERSION=${CLEAN_VERSION}" >> "${GITHUB_ENV}"
           echo "version=${CLEAN_VERSION}" >> "${GITHUB_OUTPUT}"
-          echo "ARCHIVE_NAME=oc2cap_${CLEAN_VERSION}_${GOOS_PART%-*}_${GOOS_PART#*-}.zip" >> "${GITHUB_ENV}"
-          echo "LIB_NAME=oc2cap.${{ matrix.ext }}" >> "${GITHUB_ENV}"
+          echo "ARCHIVE_NAME=oc2cpa_${CLEAN_VERSION}_${GOOS_PART%-*}_${GOOS_PART#*-}.zip" >> "${GITHUB_ENV}"
+          echo "LIB_NAME=oc2cpa.${{ matrix.ext }}" >> "${GITHUB_ENV}"
 
       - name: Build cross shared library
         timeout-minutes: 45
@@ -273,7 +273,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p out
-          mv dist/oc2cap_${VERSION}_*.zip* out/ 2>/dev/null || true
+          mv dist/oc2cpa_${VERSION}_*.zip* out/ 2>/dev/null || true
           ls -la out/
           if ls out/*.sha256 >/dev/null 2>&1; then
             sort out/*.sha256 > out/checksums.txt
@@ -283,7 +283,7 @@ jobs:
           cat out/checksums.txt
           # Every platform the host can ask for must be present.
           for t in linux_amd64 linux_arm64 darwin_amd64 darwin_arm64 windows_amd64 windows_arm64; do
-            test -f "out/oc2cap_${VERSION}_${t}.zip" || { echo "missing oc2cap_${VERSION}_${t}.zip"; exit 1; }
+            test -f "out/oc2cpa_${VERSION}_${t}.zip" || { echo "missing oc2cpa_${VERSION}_${t}.zip"; exit 1; }
           done
 
       - name: Stamp registry.json with the released version
@@ -297,7 +297,7 @@ jobs:
           p = pathlib.Path("registry.json")
           data = json.loads(p.read_text())
           for plug in data.get("plugins", []):
-              if plug.get("id") == "oc2cap":
+              if plug.get("id") == "oc2cpa":
                   plug["version"] = v
                   plug["release_tag"] = f"v{v}"
           p.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n")
@@ -322,12 +322,12 @@ jobs:
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             if ! git rev-parse -q --verify "refs/tags/${TAG}" >/dev/null; then
-              git tag -a "${TAG}" -m "Release oc2cap plugin v${VERSION}"
+              git tag -a "${TAG}" -m "Release oc2cpa plugin v${VERSION}"
               git push origin "${TAG}"
             fi
           fi
           NOTES=$(cat <<EOF
-          ## oc2cap CLIProxyAPI plugin v${VERSION}
+          ## oc2cpa CLIProxyAPI plugin v${VERSION}
 
           OpenCode Zen free models for [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI),
           as an external c-shared plugin — no extra server process, no extra HTTP hop.
@@ -335,12 +335,12 @@ jobs:
           ### Assets (pluginstore \`ArchiveName(id, version, goos, goarch)\`)
           | File | Contents |
           |---|---|
-          | \`oc2cap_${VERSION}_linux_amd64.zip\` | \`oc2cap.so\` |
-          | \`oc2cap_${VERSION}_linux_arm64.zip\` | \`oc2cap.so\` |
-          | \`oc2cap_${VERSION}_darwin_amd64.zip\` | \`oc2cap.dylib\` |
-          | \`oc2cap_${VERSION}_darwin_arm64.zip\` | \`oc2cap.dylib\` |
-          | \`oc2cap_${VERSION}_windows_amd64.zip\` | \`oc2cap.dll\` |
-          | \`oc2cap_${VERSION}_windows_arm64.zip\` | \`oc2cap.dll\` |
+          | \`oc2cpa_${VERSION}_linux_amd64.zip\` | \`oc2cpa.so\` |
+          | \`oc2cpa_${VERSION}_linux_arm64.zip\` | \`oc2cpa.so\` |
+          | \`oc2cpa_${VERSION}_darwin_amd64.zip\` | \`oc2cpa.dylib\` |
+          | \`oc2cpa_${VERSION}_darwin_arm64.zip\` | \`oc2cpa.dylib\` |
+          | \`oc2cpa_${VERSION}_windows_amd64.zip\` | \`oc2cpa.dll\` |
+          | \`oc2cpa_${VERSION}_windows_arm64.zip\` | \`oc2cpa.dll\` |
           | \`checksums.txt\` | SHA-256 of the zips |
           | \`registry.json\` | plugin-source manifest for this version |
 
@@ -351,8 +351,8 @@ jobs:
 
           ### Manual install (linux/amd64)
           \`\`\`bash
-          unzip oc2cap_${VERSION}_linux_amd64.zip
-          cp oc2cap.so /path/to/cliproxyapi/plugins/oc2cap.so
+          unzip oc2cpa_${VERSION}_linux_amd64.zip
+          cp oc2cpa.so /path/to/cliproxyapi/plugins/oc2cpa.so
           \`\`\`
           EOF
           )
@@ -361,6 +361,6 @@ jobs:
           else
             gh release create "${TAG}" out/*.zip out/checksums.txt out/registry.json \
               --repo "${GITHUB_REPOSITORY}" \
-              --title "oc2cap plugin v${VERSION}" \
+              --title "oc2cpa plugin v${VERSION}" \
               --notes "${NOTES}"
           fi

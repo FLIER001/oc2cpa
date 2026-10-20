@@ -13,7 +13,7 @@ import (
 // providerName is the stable identity of this provider: it is the executor and
 // auth provider key, the ModelResponse.Provider value, and the auth file "type"
 // this plugin recognizes.
-const providerName = "oc2cap"
+const providerName = "oc2cpa"
 
 // version is overridden at build time via -ldflags "-X main.version=x.y.z".
 var version = "0.0.0"
@@ -23,15 +23,17 @@ var settings = pluginSettings{
 	UpstreamBaseURL:  "https://opencode.ai/inference/v1",
 	ConnectTimeoutMS: 60_000,
 	DynamicModels:    false,
+	UsageLog:         true,
 }
 
 // pluginSettings holds the plugin-owned configuration keys under
-// plugins.configs.oc2cap in config.yaml. The host passes the section (plus
+// plugins.configs.oc2cpa in config.yaml. The host passes the section (plus
 // enabled/priority) as YAML to plugin.register/plugin.reconfigure.
 type pluginSettings struct {
 	UpstreamBaseURL  string
 	ConnectTimeoutMS int
 	DynamicModels    bool
+	UsageLog         bool
 }
 
 func configure(requestJSON []byte) {
@@ -59,13 +61,15 @@ var configLineRe = regexp.MustCompile(`^([A-Za-z][A-Za-z0-9_]*)\s*:\s*(.*)$`)
 
 // parseSettings does a deliberately minimal line-based read of the YAML section.
 // Supported keys: upstream_base_url (string), connect_timeout_ms (int),
-// dynamic_models (bool). Only top-level "key: value" lines are considered; the
-// section is flat, so this avoids pulling a YAML dependency into the plugin.
+// dynamic_models (bool), usage_log (bool). Only top-level "key: value" lines
+// are considered; the section is flat, so this avoids pulling a YAML
+// dependency into the plugin.
 func parseSettings(configYAML []byte) pluginSettings {
 	parsed := pluginSettings{
 		UpstreamBaseURL:  "https://opencode.ai/inference/v1",
 		ConnectTimeoutMS: 60_000,
 		DynamicModels:    false,
+		UsageLog:         true,
 	}
 	for line := range strings.SplitSeq(strings.ReplaceAll(string(configYAML), "\r\n", "\n"), "\n") {
 		trimmed := strings.TrimSpace(line)
@@ -92,6 +96,8 @@ func parseSettings(configYAML []byte) pluginSettings {
 			}
 		case "dynamic_models":
 			parsed.DynamicModels = value == "true"
+		case "usage_log":
+			parsed.UsageLog = value == "" || value == "true"
 		}
 	}
 	if parsed.ConnectTimeoutMS == 0 {
@@ -127,10 +133,10 @@ func registration() registrationPayload {
 		// rely on per-chunk request bodies or history chunks.
 		SchemaVersion: 6,
 		Metadata: pluginapi.Metadata{
-			Name:             "OC2CAP (OpenCode free models)",
+			Name:             "OC2CPA (OpenCode free models)",
 			Version:          version,
 			Author:           "dingguotu",
-			GitHubRepository: "https://github.com/dingguotu/oc2cap",
+			GitHubRepository: "https://github.com/dingguotu/oc2cpa",
 			ConfigFields: []pluginapi.ConfigField{
 				{
 					Name:        "upstream_base_url",
@@ -150,6 +156,12 @@ func registration() registrationPayload {
 					Default:     false,
 					Description: "Discover free models from the upstream /models endpoint in addition to the built-in catalog",
 				},
+				{
+					Name:        "usage_log",
+					Type:        pluginapi.ConfigFieldTypeBoolean,
+					Default:     true,
+					Description: "Emit a per-request forwarding log (model, latency, token usage) into the host log",
+				},
 			},
 		},
 		Capabilities: map[string]any{
@@ -160,7 +172,7 @@ func registration() registrationPayload {
 			"executor_input_formats":  []string{"chat-completions"},
 			"executor_output_formats": []string{"chat-completions"},
 			"management_api":          false,
-			"usage_plugin":            false,
+			"usage_plugin":            true,
 			"scheduler":               false,
 			"frontend_auth_provider":  false,
 		},
