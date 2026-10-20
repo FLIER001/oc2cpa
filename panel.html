@@ -86,26 +86,72 @@
 
   <form class="keyform" id="keyform">
     <h2>需要管理密钥</h2>
-    <div style="color:var(--muted)">该面板的数据接口受 CLIProxyAPI 管理密钥保护，请输入后继续（保存于浏览器本地）。</div>
+    <div style="color:var(--muted)">数据接口受 CLIProxyAPI 管理密钥保护。从管理界面打开时通常无需输入；独立打开时请输入一次（仅保存在本次会话）。</div>
     <input type="password" id="key" placeholder="management key">
     <button type="submit" style="width:100%">保存并加载</button>
   </form>
 </div>
 
 <script>
-const KEY_STORE = "oc2cpa_management_key";
+/* ---------- management key acquisition (3 fallbacks, zero config) ----------
+   Same approach as the codebuddy plugin panel:
+   1) When embedded in the CPA management UI (same-origin iframe), read the
+      UI's own localStorage "cli-proxy-auth" (XOR+base64 "enc::v1::" format),
+      so opening the panel from the sidebar needs no key at all.
+   2) ?key= URL param (cleaned from history after read, kept in sessionStorage).
+   3) Manual input (sessionStorage only, never persisted). */
 const API = "/v0/management/plugins/oc2cpa";
 const $ = id => document.getElementById(id);
-const fmt = n => (n ?? 0).toLocaleString("zh-CN");
-const shortTime = s => (s || "").replace("T", " ").replace(/[+-]\d\d(:\d\d)?$/, "");
+const ENC_PREFIX = "enc::v1::";
+const SECRET_SALT = "cli-proxy-api-webui::secure-storage";
+const PANEL_STORE = "cli-proxy-auth";
+const SS_KEY = "oc2cpa-mgmt-key";
 
-function getKey() { try { return localStorage.getItem(KEY_STORE) || ""; } catch { return ""; } }
+function _enc(t){return new TextEncoder().encode(t)}
+function _dec(b){return new TextDecoder().decode(b)}
+function _keyBytes(){try{return _enc(SECRET_SALT+"|"+window.location.host+"|"+navigator.userAgent)}catch(e){return _enc(SECRET_SALT)}}
+function _xor(d,k){const r=new Uint8Array(d.length);for(let i=0;i<d.length;i++)r[i]=d[i]^k[i%k.length];return r}
+function _b64e(b){let s="";for(let i=0;i<b.length;i++)s+=String.fromCharCode(b[i]);return btoa(s)}
+function _b64d(s){const bin=atob(s);const b=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)b[i]=bin.charCodeAt(i);return b}
+function deobfuscate(p){if(!p||!p.startsWith(ENC_PREFIX))return p;try{return _dec(_xor(_b64d(p.slice(ENC_PREFIX.length)),_keyBytes()))}catch(e){return p}}
+function isEmbedded(){try{return window.self!==window.top}catch(e){return false}}
+
+function readPanelKey(){
+  if(!isEmbedded())return null;
+  let raw;try{raw=localStorage.getItem(PANEL_STORE)}catch(e){return null}
+  if(!raw)return null;
+  try{
+    const parsed=JSON.parse(deobfuscate(raw));
+    const st=(parsed&&parsed.state)||parsed||{};
+    return typeof st.managementKey==="string"&&st.managementKey?st.managementKey:null;
+  }catch(e){return null}
+}
+function readUrlKey(){
+  const m=new URLSearchParams(window.location.search).get("key");
+  if(m){
+    try{sessionStorage.setItem(SS_KEY,m)}catch(e){}
+    history.replaceState(null,"",window.location.pathname);
+  }
+  return m;
+}
+function getKey(){
+  try{
+    const ss=sessionStorage.getItem(SS_KEY);
+    if(ss)return ss;
+  }catch(e){}
+  const stored=readPanelKey();
+  if(stored)return stored;
+  return readUrlKey();
+}
 function headers() {
-  const h = { };
+  const h = {};
   const key = getKey();
   if (key) h["Authorization"] = "Bearer " + key;
   return h;
 }
+const fmt = n => (n ?? 0).toLocaleString("zh-CN");
+const shortTime = s => (s || "").replace("T", " ").replace(/[+-]\d\d(:\d\d)?$/, "");
+
 async function api(path) {
   const resp = await fetch(API + path, { headers: headers() });
   if (resp.status === 401 || resp.status === 403) {
@@ -201,7 +247,7 @@ $('keyform').onsubmit = ev => {
   ev.preventDefault();
   const k = $('key').value.trim();
   if (!k) return;
-  try { localStorage.setItem(KEY_STORE, k); } catch {}
+  try { sessionStorage.setItem(SS_KEY, k); } catch {}
   $('keyform').style.display = 'none';
   load();
 };
