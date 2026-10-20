@@ -92,6 +92,7 @@ plugins:
 | `upstream_base_url` | `https://opencode.ai/inference/v1` | Upstream base URL (a local relay can be put here) |
 | `connect_timeout_ms` | `60000` | Milliseconds to wait for response headers before giving up (1–600000) |
 | `dynamic_models` | `false` | Discover `-free` models from the upstream `/models` endpoint in addition to the built-in catalog |
+| `usage_log` | `true` | Emit a per-request forwarding log (`[oc2cpa-usage]`) with model, latency and token usage into the host log |
 
 No API key is needed — the plugin authorizes with the fixed upstream token the
 free tier requires.
@@ -111,6 +112,23 @@ Verified ones:
 Data from [https://models.opencode.ai/api.json](https://models.opencode.ai/api.json)
 (`limit` and `modalities`), verify there for new models or set
 `dynamic_models: true` to pull them automatically.
+
+## Usage logs
+
+The plugin registers CLIProxyAPI's UsagePlugin capability. The host pushes one
+usage record per request back into the plugin, which prints a single
+`[oc2cpa-usage]` line into the host log:
+
+```
+[oc2cpa-usage] {"time":"2026-10-20T08:36:14+08:00","request_id":"...","provider":"oc2cpa","model":"glm-5.3-flash-free","auth_type":"oauth","api_key":"sk-mE279...","stream":true,"failed":false,"latency_ms":1318,"ttft_ms":1318,"input_tokens":247,"output_tokens":3,"total_tokens":250}
+```
+
+It carries the model, stream/failure status, total latency and TTFT, and the
+`input / output / reasoning / cached / total` token counters (the client API
+key is redacted to a short prefix). Failed requests include the upstream
+`status` code instead of token counters. The same metrics are recorded into
+CLIProxyAPI's own usage database, so the management UI statistics page shows
+them as well. Set `usage_log: false` to silence the console lines.
 
 ## Development
 

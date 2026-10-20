@@ -85,6 +85,7 @@ plugins:
 | `upstream_base_url` | `https://opencode.ai/inference/v1` | 上游地址，可指向本地中继 |
 | `connect_timeout_ms` | `60000` | 收到响应头前的等待毫秒数（1–600000） |
 | `dynamic_models` | `false` | 除内置目录外，再从上游 `/models` 发现 `-free` 模型 |
+| `usage_log` | `true` | 每次请求在宿主日志输出一行 `[oc2cpa-usage]` 转发日志（模型、延迟、token 消耗） |
 
 无需 API Key——插件使用免费层要求的固定上游令牌鉴权。
 
@@ -103,6 +104,21 @@ plugins:
 [https://models.opencode.ai/api.json](https://models.opencode.ai/api.json)
 （`limit` 与 `modalities` 字段），新模型可自行核实，或设置
 `dynamic_models: true` 自动拉取。
+
+## 转发日志与用量
+
+插件注册了 CLIProxyAPI 的 UsagePlugin 能力。宿主每次请求后会把用量记录推给
+插件，插件向宿主日志输出一行 `[oc2cpa-usage]`：
+
+```
+[oc2cpa-usage] {"time":"2026-10-20T08:36:14+08:00","request_id":"...","provider":"oc2cpa","model":"glm-5.3-flash-free","auth_type":"oauth","api_key":"sk-mE279...","stream":true,"failed":false,"latency_ms":1318,"ttft_ms":1318,"input_tokens":247,"output_tokens":3,"total_tokens":250}
+```
+
+包含模型、流式/失败状态、总延迟与首字延迟（TTFT），以及
+`input / output / reasoning / cached / total` 五项 token 计数（客户端 API
+Key 已打码为前缀）；失败请求会带上游 `status` 码。同样的指标宿主自己也已
+写入用量数据库，管理界面的统计页可以看到。`usage_log: false` 可关闭控制台
+输出。
 
 ## 开发
 
