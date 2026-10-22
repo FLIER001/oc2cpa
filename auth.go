@@ -2,7 +2,10 @@ package main
 
 import (
 	"encoding/json"
+	"os"
+	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/pluginabi"
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/pluginapi"
@@ -62,6 +65,13 @@ func handleParseAuth(requestJSON []byte) pluginapi.AuthParseResponse {
 	}
 }
 
+func authLabel(raw map[string]any) string {
+	if label, ok := raw["label"].(string); ok && label != "" {
+		return label
+	}
+	return "OpenCode free models (anonymous)"
+}
+
 // authMetadata is what the host persists back into the auth file; anything left
 // out here is dropped when the host rewrites the file after a refresh.
 func authMetadata(raw map[string]any) map[string]any {
@@ -83,13 +93,6 @@ func authPrefix(raw map[string]any) string {
 		return strings.TrimSpace(prefix)
 	}
 	return ""
-}
-
-func authLabel(raw map[string]any) string {
-	if label, ok := raw["label"].(string); ok && label != "" {
-		return label
-	}
-	return "OpenCode free models (anonymous)"
 }
 
 // handleRefreshAuth keeps the auth permanently valid: the free tier uses no
@@ -118,23 +121,87 @@ type hostAuthListResponse struct {
 	Files []pluginapi.HostAuthFileEntry `json:"files"`
 }
 
-// bootstrapAuthOnce creates the synthetic auth file on first registration so
-// the plugin is usable right after the two-line config.yaml addition. Failure
-// is non-fatal: the user can also drop an oc2cpa.json into auth-dir manually.
+// authFileName is the credential file the plugin bootstraps into auth-dir.
+const authFileName = providerName + ".json"
+
+var (
+	hostAuthDirMu sync.RWMutex
+	hostAuthDir   string
+)
+
+// noteHostAuthDir records the auth-dir the host publishes with model requests.
+func noteHostAuthDir(dir string) {
+	dir = strings.TrimSpace(dir)
+	if dir == "" {
+		return
+	}
+	hostAuthDirMu.Lock()
+	hostAuthDir = dir
+	hostAuthDirMu.Unlock()
+}
+
+func currentHostAuthDir() string {
+	hostAuthDirMu.RLock()
+	defer hostAuthDirMu.RUnlock()
+	return hostAuthDir
+}
+
+// bootstrapAuthOnce creates the synthetic auth file when no oc2cpa credential
+// exists yet. It only writes on a confirmed absence: host.auth.save replaces the
+// file wholesale, and the host answers host.auth.list before it has loaded the
+// auth directory, so an empty answer must not be read as "file missing" — that
+// would drop the fields the host persists but the plugin does not echo, such as
+// prefix and excluded_models.
 func bootstrapAuthOnce() {
+	if oc2cpaAuthState() == authAbsent {
+		createBootstrapAuthFile()
+	}
+}
+
+type authFileState int
+
+const (
+	authUnknown authFileState = iota
+	authPresent
+	authAbsent
+)
+
+// oc2cpaAuthState inspects the auth dir the host publishes with every model
+// request. That directory is authoritative; host.auth.list is only a fallback,
+// and stays empty until the host has finished loading credentials.
+func oc2cpaAuthState() authFileState {
+	if dir := currentHostAuthDir(); dir != "" {
+		_, err := os.Stat(filepath.Join(dir, authFileName))
+		switch {
+		case err == nil:
+			return authPresent
+		case os.IsNotExist(err):
+			return authAbsent
+		default:
+			// Unreadable location: assume a file is there rather than replace it.
+			return authUnknown
+		}
+	}
 	responseBytes, err := goHostCall(pluginabi.MethodHostAuthList, []byte("{}"))
 	if err != nil {
-		return
+		return authUnknown
 	}
 	var list hostAuthListResponse
 	if err := json.Unmarshal(responseBytes, &list); err != nil {
-		return
+		return authUnknown
+	}
+	if len(list.Files) == 0 {
+		return authUnknown
 	}
 	for _, file := range list.Files {
-		if file.Provider == providerName || file.Type == providerName {
-			return
+		if file.Name == authFileName || file.Provider == providerName || file.Type == providerName {
+			return authPresent
 		}
 	}
+	return authAbsent
+}
+
+func createBootstrapAuthFile() {
 	payload, _ := json.Marshal(map[string]any{
 		"type":      providerName,
 		"provider":  providerName,
