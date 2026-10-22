@@ -115,6 +115,30 @@ func handleRefreshAuth(requestJSON []byte) pluginapi.AuthRefreshResponse {
 	}
 }
 
+// stripAuthPrefix removes the credential's model prefix from a requested id. The
+// host publishes aliases as "prefix/model" but the upstream only knows the bare
+// model name, so forwarding the routed id verbatim is rejected as unavailable.
+func stripAuthPrefix(model string, req pluginapi.ExecutorRequest) string {
+	prefix := ""
+	if raw, ok := req.AuthMetadata["prefix"].(string); ok {
+		prefix = strings.TrimSpace(raw)
+	}
+	if prefix == "" {
+		var raw map[string]any
+		if json.Unmarshal(req.StorageJSON, &raw) == nil {
+			prefix = authPrefix(raw)
+		}
+	}
+	prefix = strings.TrimSuffix(prefix, "/")
+	if prefix == "" {
+		return model
+	}
+	if trimmed, ok := strings.CutPrefix(model, prefix+"/"); ok {
+		return trimmed
+	}
+	return model
+}
+
 // hostAuthListEntry is the wire payload for host.auth.list. The plugin only
 // needs the file names and provider fields for bootstrap detection.
 type hostAuthListResponse struct {
