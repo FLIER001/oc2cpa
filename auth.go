@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"strings"
 
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/pluginabi"
 	"github.com/router-for-me/CLIProxyAPI/v8/sdk/pluginapi"
@@ -54,13 +55,34 @@ func handleParseAuth(requestJSON []byte) pluginapi.AuthParseResponse {
 			Provider:    providerName,
 			FileName:    req.FileName,
 			Label:       authLabel(raw),
+			Prefix:      authPrefix(raw),
 			StorageJSON: storageJSON,
-			Metadata: map[string]any{
-				"type":     providerName,
-				"provider": providerName,
-			},
+			Metadata:    authMetadata(raw),
 		},
 	}
+}
+
+// authMetadata is what the host persists back into the auth file; anything left
+// out here is dropped when the host rewrites the file after a refresh.
+func authMetadata(raw map[string]any) map[string]any {
+	meta := map[string]any{
+		"type":     providerName,
+		"provider": providerName,
+	}
+	if prefix := authPrefix(raw); prefix != "" {
+		meta["prefix"] = prefix
+	}
+	return meta
+}
+
+// authPrefix carries the optional model prefix from the auth file. The host
+// rewrites the file from every AuthData it receives, so both parse and refresh
+// must echo it or the prefix is lost on the first refresh cycle.
+func authPrefix(raw map[string]any) string {
+	if prefix, ok := raw["prefix"].(string); ok {
+		return strings.TrimSpace(prefix)
+	}
+	return ""
 }
 
 func authLabel(raw map[string]any) string {
@@ -78,14 +100,14 @@ func handleRefreshAuth(requestJSON []byte) pluginapi.AuthRefreshResponse {
 	if err := json.Unmarshal(requestJSON, &req); err != nil {
 		return pluginapi.AuthRefreshResponse{}
 	}
+	var raw map[string]any
+	_ = json.Unmarshal(req.StorageJSON, &raw)
 	return pluginapi.AuthRefreshResponse{
 		Auth: pluginapi.AuthData{
 			Provider:    providerName,
+			Prefix:      authPrefix(raw),
 			StorageJSON: req.StorageJSON,
-			Metadata: map[string]any{
-				"type":     providerName,
-				"provider": providerName,
-			},
+			Metadata:    authMetadata(raw),
 		},
 	}
 }
